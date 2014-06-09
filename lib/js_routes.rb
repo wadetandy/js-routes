@@ -17,7 +17,8 @@ class JsRoutes
     prefix: nil,
     url_links: nil,
     camel_case: false,
-    default_url_options: {}
+    default_url_options: {},
+    routes_definition: :default
   }
 
   NODE_TYPES = {
@@ -122,7 +123,7 @@ class JsRoutes
   protected
 
   def js_routes
-    js_routes = Rails.application.routes.named_routes.routes.sort_by(&:to_s).map do |_, route|
+    js_routes = routes_definition.named_routes.routes.sort_by(&:to_s).map do |_, route|
       if route.app.respond_to?(:superclass) && route.app.superclass == Rails::Engine && !route.path.anchored
         route.app.routes.named_routes.map do |_, engine_route|
           build_route_if_match(engine_route, route)
@@ -133,6 +134,14 @@ class JsRoutes
     end.flatten.compact
 
     "{\n" + js_routes.join(",\n") + "}\n"
+  end
+
+  def routes_definition
+    if @options[:routes_definition] == :default
+      Rails.application.routes
+    else
+      @options[:routes_definition]
+    end
   end
 
   def build_route_if_match(route, parent_route=nil)
